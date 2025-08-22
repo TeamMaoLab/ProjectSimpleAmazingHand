@@ -32,6 +32,10 @@ OPENAI_MODEL=Qwen/Qwen3-Coder-480B-A35B-Instruct
 
 请将 `你自己的key` 替换为你在 ModelScope 上申请的实际 API Key。
 
+## 文档管理方案
+
+为了有效地组织和管理项目中预期的大量文档（包括设计文档、会议纪要、项目规划等），建议采用结构化的文档管理方案。详细方案请参见 [docs/documentation_management_plan.md](./docs/documentation_management_plan.md)。
+
 ## 贡献者 (Contributors)
 
 [<img src="https://github.com/TheTinkerJ.png" width="100px;" alt="TheTinkerJ"/>](https://github.com/TheTinkerJ)
