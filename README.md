@@ -6,6 +6,13 @@ AmazingHand 是一个由 Pollen Robotics 开发的低成本、开源的机器人
 
 此 `ProjectSimpleAmazingHand` 仓库用于管理、修改和实验 AmazingHand 的设计及相关软件。
 
+## 项目当前推进状态
+
+项目当前推进状态请参见 [docs/plans/overview.md](./docs/plans/overview.md)。
+
+最近完成的项目：
+- [使用 micropython 快速实现一个单手指控制的网页demo](./docs/plans/esp32_web_control_demo.md) (已完成 - 2025-08-23)
+
 ## 项目内容预期
 
 本项目预期将包含以下内容：
@@ -15,6 +22,7 @@ AmazingHand 是一个由 Pollen Robotics 开发的低成本、开源的机器人
 *   **文档**: 详细的项目文档、使用说明等。
 *   **会议纪要**: 项目相关的讨论和决策记录。
 *   **项目规划**: 项目的发展路线图和任务安排。
+*   **固件**: 项目相关的固件文件存放在 `firmware/` 目录下，该目录不受 Git 版本控制。
 
 ## 开发辅助
 
