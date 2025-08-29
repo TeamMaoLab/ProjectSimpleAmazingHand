@@ -218,8 +218,7 @@
 
 ### 5. 深入学习资源
 - **详细解析文档**
-  - **`mj_forward_in_depth.md`**: 一份专门深入探讨 `mujoco.mj_forward` 函数、`free` 关节 `qpos` 结构以及如何通过实验 (`exp_mj_forward.py`) 直观理解这些概念的详细文档。
-    - **文件路径**: `archive/DT250828_mujoco_learning/mj_forward_in_depth.md`
+  - [mj_forward_in_depth.md](./mj_forward_in_depth.md): 一份专门深入探讨 `mujoco.mj_forward` 函数、`free` 关节 `qpos` 结构以及如何通过实验 (`exp_mj_forward.py`) 直观理解这些概念的详细文档.
     - **内容概要**: 
       - `mujoco.mj_forward` 的核心作用、内部机制、调用时机及与 `mj_step` 的关系。
       - 通过 `exp_mj_forward.py` 实验脚本，直观展示修改 `qpos` 后调用/不调用 `mj_forward` 对 `geom_xpos` 等派生量的影响。

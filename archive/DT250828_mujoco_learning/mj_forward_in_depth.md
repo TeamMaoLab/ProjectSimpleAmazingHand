@@ -1,6 +1,6 @@
-# 深入理解 `mujoco.mj_forward` 及相关概念 (基于 `exp_mj_forward.py`)
+# 深入理解 `mujoco.mj_forward` 及相关概念 (基于 [`exp_mj_forward.py`](./exp_mj_forward.py))
 
-本文档旨在深入探讨 `mujoco.mj_forward` 函数的作用，并结合 `archive/DT250828_mujoco_learning/exp_mj_forward.py` 实验脚本，详细解释 `free` 关节的广义坐标 (`qpos`) 以及如何通过修改 `qpos` 来直观感受 `mj_forward` 的必要性。
+本文档旨在深入探讨 `mujoco.mj_forward` 函数的作用，并结合 [`exp_mj_forward.py`](./exp_mj_forward.py) 实验脚本，详细解释 `free` 关节的广义坐标 (`qpos`) 以及如何通过修改 `qpos` 来直观感受 `mj_forward` 的必要性。
 
 ## 1. `mujoco.mj_forward` 函数详解
 
@@ -57,20 +57,20 @@ MuJoCo 为了性能优化，**不会**在每次修改 `qpos` 或 `qvel` 后自�
     *   重置模型状态 (`mj_resetData`)。
     *   调用 `mj_forward` 计算初始派生量。
     *   打印并保存初始的 `geom_xpos` 和渲染图 (`tmp-output-scene_A.png`)。
-3.  **场景 B (修改 `qpos` 但不调用 `mj_forward`)**:
+3.  **场景 B (修改 `qpos` 并观察 `mj_forward` 的作用)**:
     *   **直接修改 `qpos`**: 将 `body` 的 `qpos` 设置为一个新的值，例如平移到 `(0.5, 0.3, 0.1)` 并绕Z轴旋转45度 (`data.qpos[:] = [0.5, 0.3, 0.1, qw, 0, 0, qz]`)。
-    *   **关键观察 (数据)**: 立即打印 `geom_xpos`。会发现 `geom_xpos` 的值 **没有变化**，仍然与场景 A 中的值相同。
-4.  **场景 C (修改 `qpos` 并调用 `mj_forward`)**:
-    *   `qpos` 保持为场景 B 中设置的新值。
+    *   **关键观察 (数据 1)**: **不调用 `mj_forward`**，立即打印 `geom_xpos`。会发现 `geom_xpos` 的值 **没有变化**，仍然与场景 A 中的值相同。
     *   **调用 `mj_forward`**: 显式调用 `mujoco.mj_forward(model, data)`。
-    *   **关键观察 (数据)**: 再次打印 `geom_xpos`。会发现 `geom_xpos` 的值 **已经更新**，正确反映了 `body` 新的位置和旋转。
+    *   **关键观察 (数据 2)**: 再次打印 `geom_xpos`。会发现 `geom_xpos` 的值 **已经更新**，正确反映了 `body` 新的位置和旋转。
     *   **关键观察 (图像)**: 渲染并保存图像 (`tmp-output-scene_B.png`)，图像显示物体已移动和旋转。
 
-### 2.2. 实验核心结论
+### 2.4. 实验核心结论
 
-*   **直接修改 `data.qpos` 不会自动更新 `data.geom_xpos` 等派生量**。这是实验最直观的证明。通过对比修改 `qpos` 前后打印的 `geom_xpos` 值，可以清晰地看到这一点。
+*   **直接修改 `data.qpos` 不会自动更新 `data.geom_xpos` 等派生量**。这是实验最直观的证明。通过对比修改 `qpos` 后、调用 `mj_forward` 前打印的 `geom_xpos` 值（值未变）与调用 `mj_forward` 后再次打印的 `geom_xpos` 值（值已变），可以清晰地看到这一点。
 *   **必须显式调用 `mujoco.mj_forward(model, data)` 来同步状态**。只有调用它之后，所有依赖于 `qpos` 的派生量才会被正确计算和更新。
-*   **`mujoco.Renderer` 的工作依赖于最新的派生量**。虽然脚本中尝试说明直接渲染“未更新”状态的困难，但核心是渲染器需要正确的 `geom_xpos` 等数据才能工作，因此它内部很可能也调用了类似的更新机制。
+*   **`mujoco.Renderer` 的工作依赖于最新的派生量**。脚本最后调用 `mj_forward` 后进行渲染，确保了图像反映了 `qpos` 修改后的正确状态。
+*   **相关文件**:
+    *   实验脚本: [`exp_mj_forward.py`](./exp_mj_forward.py)
 
 ## 3. 理解 `free` 关节的广义坐标 `qpos`
 
@@ -137,4 +137,4 @@ MuJoCo 为了性能优化，**不会**在每次修改 `qpos` 或 `qvel` 后自�
         `geom_world_pos = body_world_pos + rotate(body_world_rot, geom_local_pos)`
         其中 `body_world_pos` 是 `[x, y, z]`，`rotate` 是由四元数 `[qw, qx, qy, qz]` 确定的旋转操作，`geom_local_pos` 是该几何体相对于 `body` 原点的局部坐标 (`geom.pos`)。
 
-通过 `exp_mj_forward.py` 实验，我们可以看到，如果不调用 `mj_forward`，即使 `qpos` 改变了，`geom_xpos` 也不会更新，从而导致状态不一致。这清晰地证明了 `mj_forward` 在同步模型状态中的核心作用。
+通过 [`exp_mj_forward.py`](./exp_mj_forward.py) 实验，我们可以看到，如果不调用 `mj_forward`，即使 `qpos` 改变了，`geom_xpos` 也不会更新，从而导致状态不一致。这清晰地证明了 `mj_forward` 在同步模型状态中的核心作用。
