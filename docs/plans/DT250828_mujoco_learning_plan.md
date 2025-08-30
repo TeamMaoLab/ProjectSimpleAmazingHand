@@ -6,7 +6,7 @@
 
 ## 步骤
 
-### 阶段一：基础入门（已完成）
+### 阶段一：基础入门（已完成 ✅ 2025-08-30）
 
 1.  **了解 MuJoCo**:
     *   访问 MuJoCo 官方文档，阅读 "Overview" 部分。
@@ -52,11 +52,12 @@
         ```
     *   该脚本使用了 `mujoco.viewer.launch` 方法，该方法在新版本的 mujoco 中可用，可以避免在 macOS 上使用 `mjpython` 的需要。
 
+
 ### 阶段二：系统学习官方教程
 
 5.  **学习官方 Colab 教程**:
     *   按照以下顺序完成官方提供的在线 Colab 教程：
-        1.  🌐 [基础入门教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/tutorial.ipynb)：学习 MuJoCo 基本概念和使用方法
+        1.  🌐 [基础入门教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/tutorial.ipynb)：学习 MuJoCo 基本概念和使用方法 ✅ (2025-08-30)
             *   📓 本地学习记录：[基础入门教程学习指南](../../archive/DT250828_mujoco_learning/tutorial_guide.md)
             *   学习 MjModel 和 MjData 数据结构
                 *   理解 mjModel 包含模型描述，即所有不随时间变化的量
@@ -83,6 +84,25 @@
                 *   掌握透明度、深度渲染、分割渲染等技术
                 *   学习相机矩阵的计算和应用
                 *   理解场景修改和多帧渲染
+
+            **第一项教程总结 (2025-08-30)**:
+
+            通过深入学习和实践官方基础入门教程，并结合一系列扩展实验，已圆满完成此部分学习目标，核心成果如下：
+
+            *   **核心概念掌握**:
+                *   深入理解了 `mjModel` (模型描述) 和 `mjData` (状态和派生量) 的区别与联系。
+                *   熟练掌握了 MJCF 语法，包括 `<mujoco>`, `<worldbody>`, `<geom>`, `<body>`, `<joint>`, `<default>`, `<site>`, `<actuator>` 等关键标签。
+                *   透彻理解了关节（Joint）作为约束父子刚体相对运动的核心机制，特别是 `free` 关节（7维 `qpos`）和 `hinge` 关节（1个旋转自由度）的特性。
+            *   **实践能力提升**:
+                *   成功运行并深入分析了基础示例模型 [hello.xml](../../archive/DT250828_mujoco_learning/hello.xml) / [load_hello_xml.py](../../archive/DT250828_mujoco_learning/load_hello_xml.py)，理解了物理交互（重力、碰撞）的底层逻辑。
+                *   通过 [exp_mj_forward.py](../../archive/DT250828_mujoco_learning/exp_mj_forward.py) 实验，直观验证了 `mujoco.mj_forward` 函数在同步状态（如 `qpos`）与其派生量（如 `geom_xpos`）中的关键作用。
+                *   通过 [integrated_joint_demo.py](../../archive/DT250828_mujoco_learning/integrated_joint_demo.py) 实验，实践了如何在 MJCF 中为刚体添加关节，并通过代码精确控制其状态。
+                *   通过 [exp_contact_demo.py](../../archive/DT250828_mujoco_learning/exp_contact_demo.py) 实验，掌握了接触检测、访问接触信息以及可视化接触点和接触力的方法。
+                *   通过 [exp_actuator_demo.py](../../archive/DT250828_mujoco_learning/exp_actuator_demo.py) 实验，初步掌握了 `position` 和 `velocity` 两种执行器（Actuator）的基本原理、行为差异及关键参数（`kp`, `kv`）的调优。
+            *   **知识体系构建**:
+                *   将学习过程中的关键概念、函数、属性和实践经验系统地整理到了 [tutorial_guide.md](../../archive/DT250828_mujoco_learning/tutorial_guide.md) 中，形成了清晰的学习笔记和未来参考手册。
+                *   为进入下一阶段（系统学习后续官方教程或深入研究关键功能）奠定了坚实的基础，具备了独立探索和实验的能力.
+
         2.  🌐 [模型编辑教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/model_editing.ipynb)：掌握如何程序化创建和编辑模型
         3.  🌐 [Rollout 教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/rollout.ipynb)：学习使用多线程 rollout 模块
         4.  🌐 [LQR 控制器教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/lqr.ipynb)：实现人形单腿平衡控制器
