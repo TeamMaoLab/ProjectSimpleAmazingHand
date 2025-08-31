@@ -91,13 +91,19 @@
     - 前3个元素 (`x, y, z`) 直接表示刚体原点在世界坐标系中的平移位置。
     - 后4个元素 (`qw, qx, qy, qz`) 是一个单位四元数，表示刚体相对于世界坐标系的旋转。
       - **四元数示例 (绕Z轴旋转)**: 若想让刚体绕其Z轴（也是世界Z轴）旋转 `angle_z`  角度，对应的四元数为 `[qw, qx, qy, qz] = [cos(angle_z/2), 0, 0, sin(angle_z/2)]`。在代码中设置 `data.qpos[:] = [dx, dy, dz, np.cos(angle_z/2), 0, 0, np.sin(angle_z/2)]` 即可实现先平移到 `(dx, dy, dz)` 再绕Z轴旋转 `angle_z`。
-  
-  相关代码示例：
-  ```python
-  print('Total number of DoFs in the model:', model.nv)
-  print('Generalized positions:', data.qpos)
-  print('Generalized velocities:', data.qvel)
-  ```
+  - **深入理解 `hinge` 关节的自由度与作用 (来自对链式摆模型的分析)**:
+    - **自由度**: `hinge` 关节只提供 **1** 个自由度，即绕其指定轴的旋转角度。
+    - **直觉理解**: 可以将 `hinge` 关节的作用形象地理解为“**一个固定连接点 + 一个固定旋转轴**”。子物体被“钉”在父物体上的一个点，并且只能绕穿过该点的一个固定轴旋转。
+  - **深入理解 `data.qpos` 的结构**:
+    - `data.qpos` 是一个一维数组，它按顺序存储了模型中**所有关节**的广义位置。
+    - 这些信息是按照关节在模型中定义的顺序（或内部ID顺序）依次排列的。
+    - 不同类型的关节具有不同数量的自由度，因此在 `qpos` 数组中占用的元素数量也不同：
+      - `free` 关节: 有 **7** 个自由度。这对应 `qpos` 中连续的 7 个元素：前 3 个表示笛卡尔坐标 (x, y, z)；后 4 个表示单位四元数 (qw, qx, qy, qz) 来描述旋转。
+      - `hinge` 关节: 有 **1** 个自由度。这对应 `qpos` 中的 1 个元素，表示绕其轴的旋转角度（以弧度为单位）。
+      - `slide` 关节: 有 **1** 个自由度，表示平移距离。
+      - `ball` 关节: 有 **3** 个自由度，用四元数表示旋转。
+    - 通过索引访问 `data.qpos` 数组，您可以精确地读取或修改任何一个关节的状态。例如，在一个包含一个 `free` 关节和一个 `hinge` 关节的模型中，`data.qpos[0:7]` 对应 `free` 关节的 7 个广义位置，`data.qpos[7]` 对应 `hinge` 关节的 1 个广义位置（角度）。
+    - **核心理解**: `data.qpos` 中存储的值，本质上是每个关节对其连接的父子刚体之间相对运动的描述。理解关节如何约束运动是解读 `qpos` 内容的关键。
 
 ### 2. 模型与数据的关系
 - **MjModel 与 MjData 的区别与联系**
@@ -136,6 +142,40 @@
 - **拉格朗日表示法**
   - 理解 MuJoCo 中物体默认没有自由度，需要通过关节显式添加
   - 理解不同关节类型的特点和应用场景
+  - **核心概念：关节是连接父子刚体的约束 (来自对 hinge 关节作用范围的深入理解)**:
+    - **首要原则**: 关节（Joint）的核心作用是**约束**它所连接的两个物体（父物体和子物体）之间的相对运动。这是理解所有关节类型的基石。
+    - **位置**: 每个关节都定义在**子物体** (`body`) 的标签内部。
+    - **连接点**: 关节隐式地定义了子物体的**原点**（由子物体的 `pos` 属性相对于其父物体定义）与其父物体上一个固定点的连接。
+    - **自由度**: 不同类型的关节通过施加不同形式的约束，将子物体相对于父物体的 6 个自由度（3 平移 + 3 旋转）减少到特定的数量。
+      - `free`: 0 个约束，6 个自由度。
+      - `hinge`: 5 个约束（固定连接点 + 固定旋转轴），1 个自由度（绕轴旋转角度）。
+      - `slide`: 5 个约束（固定连接点 + 固定平移轴），1 个自由度（沿轴平移距离）。
+      - `ball`: 3 个约束（固定连接点），3 个自由度（绕任意轴旋转，通常用四元数表示）。
+  - **关节约束与层级关系 (来自 `integrated_joint_demo.py`)**: 
+    - **Q: 在 `integrated_joint_demo.py` 中，为什么摆臂 (`hinge_body`) 自身不会自然下落？**
+    - **A:** 在 `integrated_joint_demo.py` 的 MuJoCo 模型中，摆臂 (`hinge_body`) 没有自然下落的原因在于**关节的约束设置和模型的层级关系**，具体分析如下：
+      1.  **摆臂的关节约束了其运动自由度**：摆臂的 `hinge_joint` 是一个**铰链关节**（类型为 `hinge`），其 `axis="0 1 0"` 定义了关节的旋转轴为Y轴（垂直于地面平面）。
+          *   铰链关节的特性是：只允许绕指定轴旋转，限制了其他5个自由度（3个平移+2个旋转）。
+          *   在这个模型中，`hinge_joint` 的 `pos="0 0 0"` 表示关节原点与 `hinge_body` 的原点重合，而 `hinge_body` 的 `pos="1 0 0"` 是其在世界坐标系中的初始位置。
+          *   因此，摆臂被约束为**只能绕Y轴旋转**，但关节本身没有被“固定”在某个父物体上——这会导致摆臂的运动看似“异常”，但核心原因是下面的层级关系问题。
+      2.  **摆臂是顶级body，没有父物体约束**：在 MuJoCo 的 `worldbody` 中，直接定义的 `body`（如 `free_body` 和 `hinge_body`）都是**顶级body**，它们的父物体是世界坐标系（默认固定），但关节的作用对象取决于层级关系：
+          *   对于顶级body，其关节（如 `hinge_joint`）的作用是**约束该body自身相对于世界坐标系的运动**。
+          *   但 `hinge_joint` 仅限制了摆臂的旋转轴，但不限制其**平移自由度**（因为铰链关节不限制平移）。
+          *   然而，在你的模型中，摆臂没有下落的真正原因是：**MuJoCo中，顶级body如果没有被关节约束到固定物体上，且关节类型不限制平移，理论上会受重力影响平移下落，但你的模型中摆臂的几何结构和关节参数可能导致了“视觉上的静止”**。
+          *   更可能的细节是：摆臂的初始位置 `pos="1 0 0"` 的Z坐标为0，而地面 `floor` 的Z坐标为-0.5，摆臂的最低处（`hinge_arm` 的capsule几何）初始时可能已经与地面接触，被地面的碰撞约束“托住”，因此没有明显下落。
+          *   若调整摆臂的初始Z坐标（如 `pos="1 0 2"`），使其远离地面，重新运行仿真会发现：摆臂会在重力作用下向下平移，同时绕Y轴旋转（因为铰链关节不限制Z方向的平移）。
+      3.  **总结**：摆臂没有“自然下落”是因为：
+          *   初始位置可能与地面接触，被地面的碰撞约束阻止了下落；
+          *   铰链关节仅限制旋转轴，但不限制平移，若初始位置远离地面，摆臂会同时下落并旋转。
+      4.  **如何实现“单摆”效果**：若想让摆臂像“单摆”一样绕固定点旋转（仅旋转、不下落），需要将其设置为**子body**，并将关节连接到一个固定的父body上（如地面的子body）。
+  - **深入理解 `hinge` 关节的作用范围 (来自对链式摆模型的分析)**:
+    - **核心概念**: `hinge` 关节（以及其他所有关节类型）的作用是**约束**它所连接的两个物体（父物体和子物体）之间的相对运动。
+    - **自由度**: 一个 `hinge` 关节只提供 **1** 个自由度，即绕其指定轴的旋转角度。
+    - **作用范围**:
+      1.  **连接点**: 关节总是定义在**子物体** (`body`) 的标签内。这个关节隐式地定义了子物体的**原点**（由子物体的 `pos` 属性相对于其父物体定义）与其父物体上一个固定点的连接。这个连接点可以直观地理解为“质心连接点”。
+      2.  **约束运动**: `hinge` 关节将子物体的 6 个自由度（3平移 + 3旋转）**约束**到只剩下 1 个自由度——即绕关节轴的旋转。
+      3.  **活动轴**: `hinge` 的 `axis` 参数指定了这个唯一的旋转轴。该轴的方向是在**父物体**的坐标系中定义的。
+    - **直觉理解**: 可以将 `hinge` 关节的作用形象地理解为“**一个固定连接点 + 一个固定旋转轴**”。子物体被“钉”在父物体上的一个点，并且只能绕穿过该点的一个固定轴旋转。
   
   相关代码示例：
   ```xml
@@ -151,12 +191,43 @@
 - **物理交互基础**
   - 理解为什么需要调用特定函数来计算接触力和几何体位置
   - 理解碰撞检测的基本原理
+  - **深入理解接触信息的获取与可视化 (来自 `exp_contact_demo.py`)**: 通过 `exp_contact_demo.py` 实验，可以深入理解如何检测、访问和可视化接触信息。
+    - **接触检测的触发**: MuJoCo 的物理引擎在 `mj_step` 或 `mj_forward` (更具体是 `mj_fwdPosition` 内部调用的 `mj_collision`) 过程中自动进行碰撞检测。当两个几何体发生重叠或接触时，相关信息会被计算并存储。
+    - **访问接触数据**: 仿真或前向计算后，可以通过 `data.ncon` (当前存储的接触数量) 和 `data.nefc` (有效接触约束数量) 来判断是否有接触发生。详细的接触信息存储在 `data.contact` 数组中。遍历此数组可以获取每个接触点的具体信息，如：
+      - `contact.geom1`, `contact.geom2`: 参与接触的两个几何体的 ID。
+      - `contact.pos`: 接触点在世界坐标系中的位置。
+      - `contact.frame[:3]`: 接触点的法线向量（从 `geom1` 指向 `geom2`）。
+    - **`geom_xpos` 的关键作用**: 碰撞检测依赖于准确的几何体位置。如果直接修改了 `qpos` 而没有调用 `mj_forward` 或 `mj_kinematics` 来更新 `geom_xpos`，碰撞检测将基于过时的位置信息进行，可能导致无法正确检测到接触，如 `exp_contact_demo.py` 的对比实验所示。
+    - **可视化接触**: 使用 `mujoco.Renderer` 时，可以通过配置 `mujoco.MjvOption` 对象来开启接触点和接触力的可视化。
+      - `scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True`: 显示接触点（通常为红色小球）。
+      - `scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True`: 显示接触力（通常为从接触点出发的线段，长度和方向表示力的大小和方向）。
   
   相关代码示例：
   ```python
   # 需要调用 mj_kinematics 来计算几何体的全局位置
   mujoco.mj_kinematics(model, data)
   print('geom positions:', data.geom_xpos)
+  
+  # --- 来自 exp_contact_demo.py 的示例 ---
+  # 在 mj_step 或 mj_forward 之后检查接触
+  if data.ncon > 0:
+      for i in range(data.ncon):
+          contact = data.contact[i]
+          geom1_id = contact.geom1
+          geom2_id = contact.geom2
+          geom1_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, geom1_id)
+          geom2_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, geom2_id)
+          contact_pos = contact.pos
+          contact_normal = contact.frame[:3]
+          print(f"Contact between {geom1_name} and {geom2_name} at {contact_pos}, normal {contact_normal}")
+
+  # --- 来自 exp_contact_demo.py 的可视化示例 ---
+  with mujoco.Renderer(model) as renderer:
+      scene_option = mujoco.MjvOption()
+      scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True
+      scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
+      renderer.update_scene(data, scene_option=scene_option)
+      image = renderer.render()
   ```
 
 ## 你应该了解的内容（扩展知识）
@@ -223,13 +294,39 @@
       - `mujoco.mj_forward` 的核心作用、内部机制、调用时机及与 `mj_step` 的关系。
       - 通过 `exp_mj_forward.py` 实验脚本，直观展示修改 `qpos` 后调用/不调用 `mj_forward` 对 `geom_xpos` 等派生量的影响。
       - 详细解释 `free` 关节 7 维 `qpos` 向量 (`[x, y, z, qw, qx, qy, qz]`) 中平移和四元数旋转的含义及应用示例。
+  - Actuator 学习资源 (来自 `exp_actuator_demo.py`):
+    - **核心概念**:
+      - `Actuator` 是为模型添加主动驱动力的方式，使模型能从外部控制信号 (`data.ctrl`) 驱动。
+      - 它将模型从被动修改 `qpos`/`qvel` 转变为主动驱动的动态系统，更接近真实世界的物理交互。
+    - **关键类型与区别**:
+      - `<motor>`: 直接指定施加的力/力矩。用户需要自行处理稳定性和轨迹跟踪。
+      - `<position>`: 指定目标角度。内部有控制器逻辑（如 PID），自动计算力矩使关节到达并保持目标角度。稳定性受 `kp` (比例增益) 和 `kv` (微分/阻尼增益) 参数影响。
+      - `<velocity>`: 指定目标速度。内部控制器自动计算力矩使关节维持指定速度。
+    - **实践理解**:
+      - 通过 [`exp_actuator_demo.py`](./exp_actuator_demo.py) 示例，直观体验了 `motor`, `position`, `velocity` 三种执行器的行为差异。
+      - 学会了通过 `kp` 和 `kv` 调整 `<position>` 执行器的响应，以平衡响应速度和稳定性，消除“抖动”现象。
+      - ~~理解了 `data.ctrl` 是用户设置的控制输入，而 `data.actuator_force` 是执行器实际施加到关节上的力，两者可能因物理限制（如速度、加速度极限）而不同。~~
+    - **关键属性**:
+      - `model.nu`: 执行器数量。
+      - `data.ctrl`: 一维数组，存储用户为每个执行器提供的控制信号。
+      - `data.actuator_force`: 一维数组，存储每个执行器实际产生的广义力。
 
 ## 学习重点提示
 
-1. **动手实践最重要**：每个概念都要通过实际代码运行来验证理解
-2. **关注命名访问**：这是 MuJoCo Python API 的重要特性，能让你的代码更具可读性
-3. **理解数据流**：掌握从模型创建到仿真执行再到可视化显示的完整流程
-4. **注意细节差异**：如位置(qpos)和速度(qvel)维度可能不同的情况（特别是涉及四元数时）
+1.  **动手实践最重要**：每个概念都要通过实际代码运行来验证理解
+2.  **关注命名访问**：这是 MuJoCo Python API 的重要特性，能让你的代码更具可读性
+3.  **理解数据流**：掌握从模型创建到仿真执行再到可视化显示的完整流程
+4.  **注意细节差异**：如位置(qpos)和速度(qvel)维度可能不同的情况（特别是涉及四元数时）
+5.  **实践总结**：
+    -   首先，通过 [`exp_mj_forward.py`](./exp_mj_forward.py) 示例，可以直观地理解 `mujoco.mj_forward` 函数的作用，特别是对于 `free` 关节的 7 维 `qpos` 向量（`[x, y, z, qw, qx, qy, qz]`）以及修改 `qpos` 后调用 `mj_forward` 对同步派生量（如 `geom_xpos`）的必要性。
+    -   然后，通过 [`integrated_joint_demo.py`](./integrated_joint_demo.py) 示例，可以深入理解 `data.qpos` 的整体结构（包含所有关节的广义位置）以及如何通过修改 `qpos` 来精确控制不同关节（如 `hinge` 和 `free`）连接的刚体状态。该示例还演示了如何在 MJCF 模型中为 `body` 添加 `joint`，并使用 `mujoco.Renderer` 可视化修改后的结果。
+    -   最后，通过 [`exp_contact_demo.py`](./exp_contact_demo.py) 示例，可以学习如何检测、访问和可视化物体间的接触与碰撞信息，理解 `geom_xpos` 更新对接触计算的重要性，并掌握使用 `mjvOption` 在渲染器中开启接触点和接触力可视化的方法。
+6.  **核心概念强化**:
+    -   **Joint关节即约束**: 牢记关节的核心作用是约束子 `body` 相对于其父 `body` 的运动。这是理解 MuJoCo 动力学建模的基石。
+7.  **扩展探索起点**:
+    -   **Actuator 进阶**:
+        -   已通过 `exp_actuator_demo.py` 直观理解 `motor`, `position`, `velocity` 执行器的基本行为和参数 (`kp`, `kv`) 调优。
+        -   **待探索**: 如何通过代码直接读写 `data.ctrl` 和 `data.actuator_force` 进行程序化控制与监控。
 
 ## 关键函数和概念总结
 
@@ -246,9 +343,12 @@
 - `data.qpos`: 广义位置
 - `data.qvel`: 广义速度
 - `data.geom_xpos`: 几何体位置（需要更新）
+- `data.ncon`: 当前检测到的接触数量（来自 `exp_contact_demo.py`）
+- `data.nefc`: 当前有效的接触约束数量（来自 `exp_contact_demo.py`）
+- `data.contact`: 存储接触点详细信息的数组（来自 `exp_contact_demo.py`）
 
 ### 可视化选项
 - `mujoco.MjvOption`: 可视化选项类
 - `mjVIS_JOINT`: 关节可视化标志
-- `mjVIS_CONTACTPOINT`: 接触点可视化标志
-- `mjVIS_CONTACTFORCE`: 接触力可视化标志
+- `mjVIS_CONTACTPOINT`: 接触点可视化标志（来自 `exp_contact_demo.py`）
+- `mjVIS_CONTACTFORCE`: 接触力可视化标志（来自 `exp_contact_demo.py`）
