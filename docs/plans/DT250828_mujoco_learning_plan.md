@@ -103,9 +103,9 @@
                 *   将学习过程中的关键概念、函数、属性和实践经验系统地整理到了 [tutorial_guide.md](../../archive/DT250828_mujoco_learning/tutorial_guide.md) 中，形成了清晰的学习笔记和未来参考手册。
                 *   为进入下一阶段（系统学习后续官方教程或深入研究关键功能）奠定了坚实的基础，具备了独立探索和实验的能力.
 
-        2.  🌐 [模型编辑教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/model_editing.ipynb)：掌握如何程序化创建和编辑模型
+        2.  🌐 [模型编辑教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/mjspec.ipynb)：掌握如何程序化创建和编辑模型
         3.  🌐 [Rollout 教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/rollout.ipynb)：学习使用多线程 rollout 模块
-        4.  🌐 [LQR 控制器教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/lqr.ipynb)：实现人形单腿平衡控制器
+        4.  🌐 [LQR 控制器教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/LQR.ipynb)：实现人形单腿平衡控制器
         5.  🌐 [最小二乘法教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/least_squares.ipynb)：使用 Python 实现非线性最小二乘求解器
         6.  🌐 [MJX 教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/mjx/tutorial.ipynb)：了解基于 JAX 的 MuJoCo XLA 分支
         7.  🌐 [可微分物理教程](https://colab.research.google.com/github/google-deepmind/mujoco/blob/main/python/differentiable_physics.ipynb)：使用自动推导的物理梯度训练运动策略

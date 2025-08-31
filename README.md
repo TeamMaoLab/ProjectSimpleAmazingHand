@@ -1,64 +1,44 @@
-# ProjectSimpleAmazingHand
+# 项目根目录结构说明
 
-本项目是对 [AmazingHand](https://github.com/pollen-robotics/AmazingHand) 项目的复刻和管理。
+## 主要目录
 
-AmazingHand 是一个由 Pollen Robotics 开发的低成本、开源的机器人手项目。它具有 8 个自由度，重量轻，所有执行器都内置在手部内。该项目旨在提供一个可访问、可定制的平台，用于机器人手的研究和开发。
+*   `archive/`: 存放已完成或阶段性工作的归档文件夹。
+    *   `DT250823_esp32_web_control_demo/`: ESP32 无线控制舵机的演示项目归档。
+    *   `DT250828_mujoco_learning/`: MuJoCo 学习阶段的文件归档。
+*   `docs/`: 存放项目相关的文档。
+    *   `plans/`: 存放详细的项目计划文档。
+*   `firmware/`: 存放与硬件（如舵机）相关的固件代码。
 
-此 `ProjectSimpleAmazingHand` 仓库用于管理、修改和实验 AmazingHand 的设计及相关软件。
+## 根目录重要文件
 
-## 项目当前推进状态
+*   `README.md`: 项目主说明文件。
+*   `pyproject.toml`: Python 项目配置文件，定义了项目依赖和元数据。
+*   `uv.lock`: 由 `uv` 工具生成的依赖锁定文件，确保依赖版本一致。
+*   `.python-version`: 指定项目使用的 Python 版本。
+*   `.gitignore`: Git 忽略文件配置。
 
-项目当前推进状态请参见 [docs/plans/overview.md](./docs/plans/overview.md)。
+## MuJoCo 学习归档 (archive/DT250828_mujoco_learning/) 内容概览
 
-最近完成的项目：
-- [使用 micropython 快速实现一个单手指控制的网页demo](./docs/plans/esp32_web_control_demo.md) (已完成 - 2025-08-23)
+此目录包含了 MuJoCo 学习阶段一和阶段二第一项的核心实践文件与笔记。
 
-进行中的项目：
-- [MuJoCo 学习计划](./docs/plans/DT250828_mujoco_learning_plan.md) (进行中)
+### 核心实践脚本与模型
 
-## 项目内容预期
+*   `hello.xml`: 官方基础入门教程中的第一个示例模型文件。
+*   `load_hello_xml.py`: 用于加载并可视化 `hello.xml` 模型的 Python 脚本。
+*   `exp_mj_forward.py`: 探索 `mujoco.mj_forward` 函数作用的实验脚本。
+*   `integrated_joint_demo.py`: 演示如何在 MJCF 中为刚体添加关节（如 `hinge`）并控制其状态的脚本。
+*   `exp_contact_demo.py`: 展示接触检测、访问接触信息及可视化接触点和力的脚本。
+*   `exp_actuator_demo.py`: 探索 `position` 和 `velocity` 执行器 (Actuator) 基本用法和参数调优的脚本。
 
-本项目预期将包含以下内容：
+### 学习笔记与指南
 
-*   **Python 脚本**: 用于控制和测试机器人手。
-*   **模型文件**: 包括 `.f3d` (Fusion 360) 和 `.step` 格式的 3D 模型文件。
-*   **文档**: 详细的项目文档、使用说明等。
-*   **会议纪要**: 项目相关的讨论和决策记录。
-*   **项目规划**: 项目的发展路线图和任务安排。
-*   **固件**: 项目相关的固件文件存放在 `firmware/` 目录下，该目录不受 Git 版本控制。
+*   `mujoco_fundamentals.md`: 阶段一的学习笔记，涵盖了 MuJoCo 核心概念与 MJCF 结构的初步理解。
+*   `tutorial_guide.md`: 阶段二第一项（基础入门教程）的详细学习指南和知识沉淀，是核心的学习成果总结。
+*   `mj_forward_in_depth.md`: 对 `mj_forward` 函数更深入的探索和理解笔记。
+*   `model_compilation.md`: 关于 MuJoCo 模型编译过程的笔记。
 
-## 开发辅助
+### 其他
 
-如果你准备上手这个项目，最好为这个项目配备 AI 助手，具体可以参考 [Qwen Code](https://github.com/QwenLM/qwen-code)。
-
-### 配置 Qwen Code 作为 AI 助手
-
-一种可行的方案是在项目根目录下创建一个 `.env` 文件，内容如下：
-
-```env
-OPENAI_API_KEY=ms-key--你自己的key
-OPENAI_BASE_URL=https://api-inference.modelscope.cn/v1/
-OPENAI_MODEL=Qwen/Qwen3-Coder-480B-A35B-Instruct
-```
-
-请将 `你自己的key` 替换为你在 ModelScope 上申请的实际 API Key。
-
-## 文档管理方案
-
-为了有效地组织和管理项目中预期的大量文档（包括设计文档、会议纪要、项目规划等），建议采用结构化的文档管理方案。详细方案请参见 [docs/documentation_management_plan.md](./docs/documentation_management_plan.md)。
-
-### 项目文件路径规则
-
-为了确保项目在不同环境下的可移植性和一致性，特别是在使用 Git 进行版本控制时，我们制定了以下文件路径规则：
-
-1.  **相对路径原则**: 所有代码中的文件路径都应使用相对路径，而不是绝对路径。这确保了项目在不同用户的机器上能够正确运行。
-2.  **Python 脚本中的相对路径**: 在 Python 脚本中，应使用 `os.path` 或 `pathlib` 模块来构建相对于脚本位置的路径。
-3.  **文档中的路径引用**: 在 Markdown 文档中，使用相对路径来引用项目内的其他文件。
-4.  **项目结构**: 项目应保持清晰的目录结构，常见的目录包括 `src/`、`data/`、`docs/`、`archive/` 和 `tests/`。
-5.  **版本控制**: 所有源代码和文档都应纳入 Git 版本控制，大型二进制文件应考虑使用 Git LFS 管理，生成的文件不应纳入版本控制。
-
-## 贡献者 (Contributors)
-
-[<img src="https://github.com/TheTinkerJ.png" width="100px;" alt="TheTinkerJ"/>](https://github.com/TheTinkerJ)
-
-*   [TheTinkerJ](https://github.com/TheTinkerJ) - 项目发起人
+*   `tmp_*` 目录: 临时文件夹，用于存放实验过程中的临时文件或输出。
+*   `tmp-output-*.png`: 实验过程中生成的临时渲染图像。
+*   `MUJOCO_LOG.TXT`: MuJoCo 运行时的日志文件。
