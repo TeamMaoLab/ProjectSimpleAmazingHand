@@ -345,10 +345,30 @@ class TotalExport(object):
         os.makedirs(out_path, exist_ok=True)
         return out_path
 
-    def _get_component_json_data(self, component):
-        """获取组件的JSON格式位置数据"""
+    def _get_world_transform(self, occurrence):
+        """获取occurrence在世界坐标系中的完整变换矩阵"""
         try:
-            # 获取所有引用该组件的occurrences
+            # 从当前occurrence开始，累积所有父级的变换
+            world_transform = occurrence.transform.copy()
+            
+            # 获取父级assembly context
+            parent_context = occurrence.assemblyContext
+            while parent_context:
+                # 累积父级变换 - 注意顺序：先应用父级变换，再应用当前变换
+                parent_transform = parent_context.transform.copy()
+                world_transform.transformBy(parent_transform)
+                
+                # 继续向上查找父级
+                parent_context = parent_context.assemblyContext
+                
+            return world_transform
+        except:
+            # 回退到原始方法
+            return occurrence.transform
+
+    def _get_component_json_data(self, component):
+        """获取组件的JSON格式位置数据（修正世界坐标系）"""
+        try:
             design = component.parentDesign
             root_comp = design.rootComponent
 
@@ -368,7 +388,8 @@ class TotalExport(object):
                         [0.0, 0.0, 1.0, 0.0],
                         [0.0, 0.0, 0.0, 1.0]
                     ],
-                    "instances": []
+                    "instances": [],
+                    "world_coordinates": True
                 }
 
             # 查找所有引用该组件的occurrences
@@ -377,9 +398,10 @@ class TotalExport(object):
 
             instances = []
             for occ in found_occurrences:
-                transform = occ.transform
-                translation = transform.translation
-                matrix_data = transform.asArray()
+                # 使用世界坐标系变换
+                world_transform = self._get_world_transform(occ)
+                translation = world_transform.translation
+                matrix_data = world_transform.asArray()
 
                 # 将4x4矩阵转换为4x4数组
                 transform_matrix = []
@@ -396,24 +418,40 @@ class TotalExport(object):
                         "y": translation.y,
                         "z": translation.z
                     },
-                    "transform": transform_matrix
+                    "transform": transform_matrix,
+                    "world_coordinates": True,
+                    "occurrence_path": self._get_occurrence_path(occ)
                 }
                 instances.append(instance_data)
 
             return {
                 "name": component.name,
                 "type": "component",
-                "instances": instances
+                "instances": instances,
+                "world_coordinates": True
             }
         except Exception as ex:
             return {
                 "name": component.name,
                 "type": "component",
-                "error": str(ex)
+                "error": str(ex),
+                "world_coordinates": False
             }
 
+    def _get_occurrence_path(self, occurrence):
+        """获取occurrence的完整路径，用于调试"""
+        try:
+            path_parts = [occurrence.component.name]
+            parent = occurrence.assemblyContext
+            while parent:
+                path_parts.insert(0, parent.component.name)
+                parent = parent.assemblyContext
+            return " > ".join(path_parts)
+        except:
+            return occurrence.component.name
+
     def _get_body_json_data(self, body):
-        """获取实体的JSON格式位置数据"""
+        """获取实体的JSON格式位置数据（使用世界坐标系）"""
         try:
             # 实体使用其父组件的位置信息
             component = body.parentComponent
@@ -423,13 +461,15 @@ class TotalExport(object):
                 "name": body.name,
                 "type": "body",
                 "parent_component": component.name,
-                "instances": component_json.get("instances", [])
+                "instances": component_json.get("instances", []),
+                "world_coordinates": True
             }
         except Exception as ex:
             return {
                 "name": body.name,
                 "type": "body",
-                "error": str(ex)
+                "error": str(ex),
+                "world_coordinates": False
             }
 
     def _save_json_data(self, root_folder):
@@ -444,9 +484,8 @@ class TotalExport(object):
             self.log.exception("保存JSON数据失败: {}".format(str(ex)))
 
     def _get_component_position_info(self, component):
-        """获取组件的位置信息"""
+        """获取组件的位置信息（世界坐标系）"""
         try:
-            # 获取所有引用该组件的occurrences
             design = component.parentDesign
             root_comp = design.rootComponent
 
@@ -455,7 +494,7 @@ class TotalExport(object):
             # 如果是根组件，位置为原点
             if component == root_comp:
                 position_info += "位置 (X, Y, Z): 0.000000, 0.000000, 0.000000\n"
-                position_info += "说明: 根组件，无位置变换\n"
+                position_info += "说明: 根组件，世界坐标系原点\n"
                 return position_info
 
             # 查找所有引用该组件的occurrences
@@ -468,22 +507,24 @@ class TotalExport(object):
 
             # 为每个occurrence记录位置信息
             for i, occ in enumerate(found_occurrences):
-                position_info += "--- 实例 {} ---\n".format(i + 1)
+                position_info += "--- 实例 {} (世界坐标系) ---\n".format(i + 1)
+                
+                # 获取完整路径用于调试
+                path = self._get_occurrence_path(occ)
+                position_info += "路径: {}\n".format(path)
 
-                # 获取occurrence的变换矩阵
-                transform = occ.transform
-
-                # 获取位置信息（平移部分）
-                translation = transform.translation
+                # 使用世界坐标系变换
+                world_transform = self._get_world_transform(occ)
+                translation = world_transform.translation
                 x = translation.x
                 y = translation.y
                 z = translation.z
 
-                position_info += "位置 (X, Y, Z): {:.6f}, {:.6f}, {:.6f}\n".format(x, y, z)
-                position_info += "变换矩阵:\n"
+                position_info += "世界位置 (X, Y, Z): {:.6f}, {:.6f}, {:.6f}\n".format(x, y, z)
+                position_info += "世界变换矩阵:\n"
 
-                # 获取变换矩阵的所有元素 - 使用正确的asArray()方法
-                matrix_data = transform.asArray()
+                # 获取世界坐标系下的完整变换矩阵
+                matrix_data = world_transform.asArray()
                 for row in range(4):
                     row_start = row * 4
                     position_info += "  [{:.6f}, {:.6f}, {:.6f}, {:.6f}]\n".format(
