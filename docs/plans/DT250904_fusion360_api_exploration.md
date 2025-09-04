@@ -33,9 +33,30 @@
 
 #### 实现脚本
 - **`final_center_of_mass_extractor.py`**：完整的质心提取脚本，支持多种方法对比
-- **脚本位置**：已归档至`archive/DT250904_fusion360_api_exploration/final_center_of_mass_extractor.py`
+- **`check_component_visibility.py`**：零部件可见状态检查工具，统计和显示所有装配实例的可见状态
+- **脚本位置**：已归档至`archive/DT250904_fusion360_api_exploration/`目录
 
 #### 验证结果
 - BComp组件质心：脚本结果与Fusion分析完全一致 (2.302, 4.609, 0.201) mm
 - 差距：X=0.000, Y=0.000, Z=0.000 mm
 - 方法：使用根组件物理属性 (`root.physicalProperties.centerOfMass`)
+
+### 🔍 零部件可见状态检查工具
+
+#### 功能特点
+- **全面检查**：遍历所有装配实例，检查每个零部件的可见状态
+- **统计信息**：提供可见/不可见零部件数量统计和比例分析
+- **详细报告**：显示每个装配实例的名称、组件名称和可见状态
+- **用户友好**：结果以清晰的格式在消息框中展示
+
+#### 技术实现
+- 使用 `occurrence.isLightBulbOn` 属性判断零部件可见状态
+- 遍历 `root.allOccurrences` 获取所有装配实例
+- 自动计算统计数据和可见比例
+- 支持文本窗口输出，便于复制和记录
+
+#### 应用场景
+- 装配文档状态检查
+- 复杂装配的可视化管理
+- 设计评审前的状态确认
+- 批量处理前的状态检查

@@ -524,7 +524,8 @@ transformed_z = (matrix_array[8] * local_com_point.x +
 
 ### 实现脚本
 - **`final_center_of_mass_extractor.py`**：完整的质心提取脚本，支持多种方法对比
-- **脚本位置**：`archive/DT250904_fusion360_api_exploration/final_center_of_mass_extractor.py`
+- **`check_component_visibility.py`**：零部件可见状态检查工具，提供全面的可见性分析
+- **脚本位置**：`archive/DT250904_fusion360_api_exploration/`目录
 - **验证结果**：BComp组件质心提取与Fusion分析完全一致
 
 ### 应用价值
@@ -532,6 +533,40 @@ transformed_z = (matrix_array[8] * local_com_point.x +
 - 获取准确的组件质心坐标
 - 提取装配位置和姿态信息
 - 为物理仿真提供精确的参数输入
+
+## 🔍 零部件可见状态检查工具
+
+### 功能概述
+开发了一个实用的零部件可见状态检查工具，能够快速分析装配文档中所有零部件的可见状态，提供详细的统计报告。
+
+### 核心功能
+```python
+# 检查零部件可见状态的核心代码
+for occurrence in root.allOccurrences:
+    component_name = occurrence.component.name
+    occurrence_name = occurrence.name
+    is_visible = occurrence.isLightBulbOn  # 关键属性
+    
+    status_text = "可见" if is_visible else "不可见"
+    # 收集和统计信息...
+```
+
+### 输出内容
+- **统计摘要**：总装配实例数量、可见/不可见数量、可见比例
+- **详细列表**：每个装配实例的名称、组件名称和可见状态
+- **格式化显示**：清晰易读的消息框输出，支持文本窗口记录
+
+### 应用场景
+- **设计管理**：快速检查装配文档的零部件显示状态
+- **评审准备**：设计评审前确认所有相关零部件可见
+- **批量操作**：大规模装配的可视化管理
+- **状态记录**：生成可见状态报告用于文档记录
+
+### 技术特点
+- 使用 `occurrence.isLightBulbOn` 属性准确判断可见状态
+- 自动计算统计数据和比例分析
+- 支持文本窗口输出，便于结果复制和记录
+- 错误处理完善，适应各种装配文档结构
 
 ---
 
