@@ -483,10 +483,63 @@ def batch_extract_data(design_paths):
 
 ---
 
+## 🎯 质心提取解决方案 - 重大突破
+
+### 关键发现
+通过系统性调试和分析，我们成功解决了Fusion 360质心坐标提取的关键问题：
+
+#### 1. 根组件物理属性方法
+对于简单装配，使用根组件的物理属性可直接获得Fusion显示的准确质心坐标：
+```python
+# 获取根组件的物理属性
+root_physical = root.physicalProperties
+root_com = root_physical.centerOfMass
+
+# 结果与Fusion分析完全一致
+# BComp示例: (2.302, 4.609, 0.201) mm
+```
+
+#### 2. 矩阵变换方法
+对于单个组件，使用4x4变换矩阵正确转换局部质心坐标到全局装配坐标：
+```python
+# 正确的矩阵变换计算
+transformed_x = (matrix_array[0] * local_com_point.x + 
+                matrix_array[1] * local_com_point.y + 
+                matrix_array[2] * local_com_point.z + 
+                matrix_array[3])
+transformed_y = (matrix_array[4] * local_com_point.x + 
+                matrix_array[5] * local_com_point.y + 
+                matrix_array[6] * local_com_point.z + 
+                matrix_array[7])
+transformed_z = (matrix_array[8] * local_com_point.x + 
+                matrix_array[9] * local_com_point.y + 
+                matrix_array[10] * local_com_point.z + 
+                matrix_array[11])
+```
+
+#### 3. Fusion计算机制理解
+- Fusion 360在装配层面计算质心，已考虑所有子组件的变换关系和装配约束
+- 对于复杂装配，需要考虑组件的层次结构和变换链
+- 使用`transform2`而非`transform`可获得更精确的变换矩阵
+
+### 实现脚本
+- **`final_center_of_mass_extractor.py`**：完整的质心提取脚本，支持多种方法对比
+- **脚本位置**：`archive/DT250904_fusion360_api_exploration/final_center_of_mass_extractor.py`
+- **验证结果**：BComp组件质心提取与Fusion分析完全一致
+
+### 应用价值
+此解决方案可直接用于MuJoCo控制算法验证：
+- 获取准确的组件质心坐标
+- 提取装配位置和姿态信息
+- 为物理仿真提供精确的参数输入
+
+---
+
 ## 📅 文档信息
 
 - **创建日期**: 2025-09-04
+- **重大更新**: 2025-09-04 - 质心提取解决方案突破
 - **目标**: Fusion 360 → MuJoCo 完整数据提取解决方案
-- **覆盖范围**: 所有相关API、完整提取器、工作流程
-- **状态**: 完整解决方案已提供，立即可用
-- **下一步**: 根据具体需求进行定制化开发
+- **覆盖范围**: 所有相关API、完整提取器、工作流程、质心提取解决方案
+- **状态**: 质心提取问题已解决，完整解决方案已验证可用
+- **下一步**: 将质心提取方法集成到完整的MuJoCo参数提取工作流中

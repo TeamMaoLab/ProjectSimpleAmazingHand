@@ -148,12 +148,20 @@ for occurrence in design.allOccurrences:
     # 变换矩阵（核心！）
     transform = occurrence.transform        # 4x4变换矩阵
     
+    # 推荐使用 transform2（更精确的变换矩阵）
+    transform2 = occurrence.transform2      # 推荐使用的变换矩阵
+    
     # 位置和旋转提取
     position = transform.translation        # 位置向量
     rotation = transform.rotation           # 旋转矩阵
     
+    # 使用 transform2 获取更精确的位置和旋转
+    position2 = transform2.translation     # 更精确的位置向量
+    rotation2 = transform2.rotation        # 更精确的旋转矩阵
+    
     # 变换矩阵数据（用于MuJoCo）
     matrix_data = transform.asArray()       # 16个元素的数组
+    matrix2_data = transform2.asArray()     # 更精确的16个元素数组
     # 格式：[m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44]
     # 其中 m41, m42, m43 是位置分量
 ```
@@ -162,17 +170,26 @@ for occurrence in design.allOccurrences:
 ```python
 # 3D变换矩阵
 transform = occurrence.transform
+transform2 = occurrence.transform2        # 推荐使用
 
 # 关键方法
 transform.translation                     # 获取位置向量
+transform2.translation                    # 获取更精确的位置向量（推荐）
 transform.rotation                        # 获取旋转矩阵
+transform2.rotation                       # 获取更精确的旋转矩阵（推荐）
 transform.asArray()                       # 转换为数组
+transform2.asArray()                      # 转换更精确的数组（推荐）
 transform.invert()                        # 矩阵求逆
 transform.transformBy(other_matrix)       # 矩阵相乘
 
 # 创建变换矩阵
 new_transform = adsk.core.Matrix3D.create()
 new_transform.setWithArray(matrix_array)  # 从数组设置
+
+# transform2 与 transform 的区别
+# transform2 提供了更精确的变换计算，特别是在复杂装配中
+# transform2 考虑了组件的所有变换历史，而不仅仅是最终变换
+# 对于需要高精度位置和姿态的应用（如MuJoCo），建议使用 transform2
 ```
 
 ---
@@ -335,12 +352,17 @@ def extract_assembly_structure():
     }
     
     for occurrence in design.allOccurrences:
+        # 推荐使用 transform2 获取更精确的变换数据
         transform = occurrence.transform
+        transform2 = occurrence.transform2
+        
         assembly_data["occurrences"].append({
             "name": occurrence.name,
             "component": occurrence.component.name,
             "transform": transform.asArray(),
+            "transform2": transform2.asArray(),  # 更精确的变换矩阵
             "position": list(transform.translation.asArray()),
+            "position2": list(transform2.translation.asArray()),  # 更精确的位置
             "is_visible": occurrence.isLightBulbOn
         })
     

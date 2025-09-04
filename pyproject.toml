@@ -9,4 +9,5 @@ dependencies = [
     "matplotlib>=3.10.5",
     "mujoco>=3.3.5",
     "pillow>=11.3.0",
+    "pypinyin>=0.55.0",
 ]
