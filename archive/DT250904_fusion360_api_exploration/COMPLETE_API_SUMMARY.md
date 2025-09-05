@@ -525,6 +525,7 @@ transformed_z = (matrix_array[8] * local_com_point.x +
 ### 实现脚本
 - **`final_center_of_mass_extractor.py`**：完整的质心提取脚本，支持多种方法对比
 - **`check_component_visibility.py`**：零部件可见状态检查工具，提供全面的可见性分析
+- **`export_visible_components_stl.py`**：可见零部件STL导出工具，整合质心提取、可见性检查和STL导出功能
 - **脚本位置**：`archive/DT250904_fusion360_api_exploration/`目录
 - **验证结果**：BComp组件质心提取与Fusion分析完全一致
 
@@ -567,6 +568,188 @@ for occurrence in root.allOccurrences:
 - 自动计算统计数据和比例分析
 - 支持文本窗口输出，便于结果复制和记录
 - 错误处理完善，适应各种装配文档结构
+
+---
+
+## 🚀 可见零部件STL导出工具
+
+### 功能概述
+创建了一个综合性的可见零部件STL导出工具，整合了质心提取、可见性检查和STL导出功能，能够批量导出当前活跃项目中处于可视状态的零部件的STL文件，并记录每个STL文件对应的坐标和变换矩阵信息。
+
+### 核心功能
+```python
+# 主要功能流程
+1. 检查零部件可见状态 (occurrence.isLightBulbOn)
+2. 计算世界坐标变换矩阵 (transform2 + 装配链遍历)
+3. 导出STL文件 (exportManager.createSTLExportOptions)
+4. 提取质心坐标 (physicalProperties.centerOfMass)
+5. 生成JSON映射文件 (STL文件 ↔ 坐标+变换矩阵)
+```
+
+### 输出内容
+- **STL文件**：每个可见零部件的独立STL文件，使用世界坐标系
+- **JSON数据**：包含每个STL文件的完整信息：
+  - STL文件名和路径
+  - 组件名称和装配实例名称
+  - 世界坐标位置 (x, y, z)
+  - 4x4变换矩阵
+  - 质心坐标（局部和世界坐标）
+  - 可见性和有效性状态
+  - 导出时间戳
+
+### 技术实现
+```python
+# 关键技术实现
+class VisibleComponentSTLExporter:
+    def _get_visible_occurrences(self, root):
+        """获取所有可见的装配实例"""
+        for occurrence in root.allOccurrences:
+            if occurrence.isLightBulbOn and occurrence.isValid:
+                visible_occurrences.append(occurrence)
+    
+    def _get_world_transform(self, occurrence):
+        """计算世界坐标变换矩阵"""
+        world_matrix = adsk.core.Matrix3D.create()
+        transform_chain = []
+        
+        # 向上遍历装配链，收集所有变换
+        current_occ = occurrence
+        while current_occ is not None:
+            transform = current_occ.transform2  # 使用更精确的transform2
+            transform_chain.insert(0, transform)
+            current_occ = current_occ.assemblyContext
+        
+        # 应用变换链
+        for transform in transform_chain:
+            world_matrix.transformBy(transform)
+        
+        return world_matrix
+    
+    def _export_component_stl(self, component, filepath, world_transform):
+        """导出STL文件"""
+        stl_options = export_manager.createSTLExportOptions(component, filepath)
+        stl_options.exportAsWorldCoordinates = True
+        stl_options.transform = world_transform
+        export_manager.execute(stl_options)
+```
+
+### 应用场景
+- **MuJoCo仿真准备**：导出可见零部件的STL模型和精确位置信息
+- **3D打印**：批量导出需要打印的零部件
+- **可视化展示**：导出特定配置的装配模型
+- **数据交换**：为其他CAD/CAE软件提供模型数据
+
+### 输出文件结构
+```
+visible_components_stl_YYYYMMDD_HHMMSS/
+├── component1_occurrence1_001.stl
+├── component1_occurrence2_002.stl
+├── component2_occurrence1_003.stl
+├── ...
+└── export_data.json  # 包含所有STL文件的坐标和变换矩阵信息
+```
+
+### JSON数据格式
+```json
+{
+  "export_info": {
+    "timestamp": "2025-09-04T10:30:00",
+    "total_files": 5,
+    "total_components": 3,
+    "export_directory": "/path/to/export"
+  },
+  "components": {
+    "Component1": [
+      {
+        "stl_file": "Component1_Occurrence1_001.stl",
+        "component_name": "Component1",
+        "occurrence_name": "Occurrence1",
+        "world_position": {"x": 10.5, "y": 20.3, "z": 5.2},
+        "world_transform_matrix": [[1,0,0,0], [0,1,0,0], [0,0,1,0], [10.5,20.3,5.2,1]],
+        "center_of_mass": {
+          "local": {"x": 0, "y": 0, "z": 0},
+          "world": {"x": 10.5, "y": 20.3, "z": 5.2}
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+---
+
+## 🔄 MuJoCo XML生成工具
+
+### 功能概述
+创建了一个完整的MuJoCo工作流工具，能够将Fusion 360导出的STL文件和JSON数据自动转换为可运行的MuJoCo仿真环境，包括中文文件名转换、XML生成和查看器脚本创建。
+
+### 核心功能
+```python
+# 主要工作流程
+1. 读取STL导出目录和JSON数据
+2. 使用pypinyin将中文文件名转换为拼音
+3. 复制STL文件到assets目录并重命名
+4. 生成MuJoCo XML文件，包含所有组件的位置和变换矩阵
+5. 创建自动查看器启动脚本
+```
+
+### 技术实现
+```python
+class MuJoCoXMLGenerator:
+    def chinese_to_pinyin(self, text):
+        """中文转拼音，支持pypinyin库"""
+        if PINYIN_AVAILABLE:
+            result = pinyin(text, style=Style.NORMAL)
+            return '_'.join([item[0] for item in result])
+        else:
+            return re.sub(r'[^\u0000-\u007F]+', '_', text)
+    
+    def generate_xml(self, export_data):
+        """生成完整的MuJoCo XML文件"""
+        # 包含asset、worldbody、所有组件的完整XML结构
+        # 自动设置free关节和正确的位置变换
+```
+
+### 输出结构
+```
+visible_components_stl_YYYYMMDD_HHMMSS/
+├── mujoco/
+│   ├── assets/              # STL文件目录（重命名为拼音）
+│   │   ├── component1_occurrence1_001.stl
+│   │   └── component2_occurrence1_002.stl
+│   ├── model.xml           # MuJoCo模型文件
+│   └── viewer.py           # 查看器启动脚本
+├── export_data.json        # 原始导出数据
+└── *.stl                   # 原始STL文件
+```
+
+### 使用方法
+```bash
+# 安装依赖
+pip install pypinyin
+
+# 运行转换工具
+python generate_mujoco_xml.py /path/to/export_directory
+
+# 启动查看器
+cd /path/to/export_directory/mujoco
+python viewer.py
+```
+
+### 特点
+- **智能文件名转换**：自动将中文文件名转换为拼音，避免编码问题
+- **完整XML生成**：包含正确的asset引用、body定义和位置变换
+- **一键查看器**：自动生成可运行的查看器脚本，便于验证位置
+- **错误处理**：完善的错误处理和降级方案
+- **兼容性**：支持有无pypinyin库的环境
+
+### 应用场景
+- **快速原型验证**：从Fusion 360设计到MuJoCo仿真的一键转换
+- **教学演示**：直观展示CAD模型在物理仿真中的表现
+- **算法测试**：为控制算法提供准确的物理模型
+- **跨平台工作流**：Windows/macOS/Linux通用
 
 ---
 

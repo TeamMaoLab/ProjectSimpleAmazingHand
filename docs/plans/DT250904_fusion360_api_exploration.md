@@ -34,6 +34,7 @@
 #### 实现脚本
 - **`final_center_of_mass_extractor.py`**：完整的质心提取脚本，支持多种方法对比
 - **`check_component_visibility.py`**：零部件可见状态检查工具，统计和显示所有装配实例的可见状态
+- **`export_visible_components_stl.py`**：可见零部件STL导出工具，整合质心提取、可见性检查和STL导出功能
 - **脚本位置**：已归档至`archive/DT250904_fusion360_api_exploration/`目录
 
 #### 验证结果
@@ -60,3 +61,71 @@
 - 复杂装配的可视化管理
 - 设计评审前的状态确认
 - 批量处理前的状态检查
+
+### 🚀 可见零部件STL导出工具
+
+#### 功能特点
+- **批量导出**：一键导出所有可见零部件的STL文件
+- **精确坐标**：记录每个STL文件的世界坐标位置和变换矩阵
+- **质心信息**：提取每个零部件的局部和世界坐标质心
+- **JSON映射**：生成详细的映射文件，便于后续处理
+- **世界坐标系**：STL文件使用世界坐标系，便于直接导入其他软件
+
+#### 技术实现
+- 整合了质心提取、可见性检查和STL导出三大功能
+- 使用装配链遍历计算精确的世界坐标变换
+- 支持复杂装配结构的多层变换计算
+- 自动生成时间戳目录，避免文件覆盖
+
+#### 输出格式
+```
+visible_components_stl_YYYYMMDD_HHMMSS/
+├── Component1_Occurrence1_001.stl
+├── Component1_Occurrence2_002.stl
+├── Component2_Occurrence1_003.stl
+└── export_data.json  # 包含所有坐标和变换矩阵信息
+```
+
+#### 应用场景
+- MuJoCo仿真准备
+- 3D打印批量处理
+- 可视化展示
+- 跨软件数据交换
+
+### 🔄 MuJoCo XML生成工具
+
+#### 功能特点
+- **一键转换**：从STL导出数据直接生成可运行的MuJoCo仿真环境
+- **智能重命名**：使用pypinyin将中文文件名转换为拼音，避免编码问题
+- **完整工作流**：包含XML生成、文件整理、查看器创建的完整流程
+- **位置验证**：自动生成查看器脚本，便于验证组件位置是否正确
+
+#### 技术实现
+- 支持pypinyin库的智能中文转换
+- 完整的MuJoCo XML结构生成
+- 自动创建assets目录和文件映射
+- 错误处理和降级方案
+
+#### 输出格式
+```
+visible_components_stl_YYYYMMDD_HHMMSS/
+├── mujoco/
+│   ├── assets/           # 重命名后的STL文件
+│   ├── model.xml        # MuJoCo模型文件
+│   └── viewer.py        # 查看器启动脚本
+├── export_data.json     # 原始数据
+└── *.stl               # 原始STL文件
+```
+
+#### 使用方法
+```bash
+# 安装依赖
+pip install pypinyin
+
+# 转换STL导出数据
+python generate_mujoco_xml.py /path/to/export_dir
+
+# 启动查看器验证
+cd /path/to/export_dir/mujoco
+python viewer.py
+```

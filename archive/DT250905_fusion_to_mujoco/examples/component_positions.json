@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "export_time": "2025-09-05T21:17:03",
+    "export_mode": "assembly_positions",
+    "geometry_unit": "mm",
+    "position_unit": "m",
+    "matrix_storage": "column-major",
+    "count_components": 3,
+    "format_version": "1.0",
+    "note": "STL files are in mm. Positions are in meters. Quaternions are in wxyz format."
+  },
+  "components": [
+    {
+      "component_name": "connect",
+      "occurrence_name": "connect:1",
+      "occurrence_fullname": "connect:1",
+      "component_id": "/v4BAAEAxwEAAAAAAAABAAAA",
+      "stl_file": "connect_1_1.stl",
+      "position": {
+        "current_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          1.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "assembly_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          1.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "component_name": "hang",
+      "occurrence_name": "hang:1",
+      "occurrence_fullname": "hang:1",
+      "component_id": "/v4BAAEAVAMAAAAAAAABAAAA",
+      "stl_file": "hang_1_2.stl",
+      "position": {
+        "current_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          16.000000089406967,
+          0.0,
+          1.0,
+          0.0,
+          -0.92,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "assembly_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          16.000000089406967,
+          0.0,
+          1.0,
+          0.0,
+          -0.92,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "component_name": "base",
+      "occurrence_name": "base:1",
+      "occurrence_fullname": "base:1",
+      "component_id": "/v4BAAEAxgAAAAAAAAABAAAA",
+      "stl_file": "base_1_3.stl",
+      "position": {
+        "current_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "current_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          1.0,
+          0.0,
+          0.20000000000000007,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "assembly_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "assembly_matrix": [
+          1.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          1.0,
+          0.0,
+          0.20000000000000007,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    }
+  ]
+}
