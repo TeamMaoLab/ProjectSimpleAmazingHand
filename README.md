@@ -13,9 +13,11 @@ AmazingHand 是一个由 Pollen Robotics 开发的低成本、开源的机器人
 最近完成的项目：
 - [使用 micropython 快速实现一个单手指控制的网页demo](./docs/plans/esp32_web_control_demo.md) (已完成 - 2025-08-23)
 - [Fusion360导出插件重构完成](./archive/DT250902_fusion360_export_plugin/fusion_export_helper/README.md) (已完成 - 2025-09-02) - 将通用批量导出工具重构为专注于MuJoCo仿真的精准导出插件
+- [Fusion 360 到 MuJoCo 坐标系统修复](./docs/plans/DT250905_fusion_to_mujoco_coordinate_fix.md) (已完成 - 2025-09-05) - 解决了 Fusion 360 导出数据到 MuJoCo XML 转换过程中的坐标计算问题，实现了精确的位置映射和扁平化结构输出
 
 进行中的项目：
 - [MuJoCo 学习计划](./docs/plans/DT250828_mujoco_learning_plan.md) (进行中)
+- [Fusion 360 到 MuJoCo 完整转换流程](./archive/DT250905_fusion_to_mujoco/README.md) (进行中) - 等待包含旋转数据的导出，实现完整的四元数计算
 
 ## 项目内容预期
 
