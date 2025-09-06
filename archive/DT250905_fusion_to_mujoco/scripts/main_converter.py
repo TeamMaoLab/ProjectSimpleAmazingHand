@@ -37,20 +37,40 @@ def matrix_to_quaternion(R):
     """
     将3x3旋转矩阵转换为四元数 (w, x, y, z)
     MuJoCo使用四元数格式: w x y z
+    
+    修复版本：正确处理Fusion 360的旋转矩阵，解决旋转方向相反的问题
     """
     # 确保输入是numpy数组
     R = np.array(R, dtype=float)
 
+    # 方法1：使用标准转换公式（修复符号问题）
     # 计算四元数分量
-    qw = np.sqrt(max(0, 1 + R[0,0] + R[1,1] + R[2,2])) / 2
-    qx = np.sqrt(max(0, 1 + R[0,0] - R[1,1] - R[2,2])) / 2
-    qy = np.sqrt(max(0, 1 - R[0,0] + R[1,1] - R[2,2])) / 2
-    qz = np.sqrt(max(0, 1 - R[0,0] - R[1,1] + R[2,2])) / 2
-
-    # 确定符号
-    qx = np.copysign(qx, R[2,1] - R[1,2])
-    qy = np.copysign(qy, R[0,2] - R[2,0])
-    qz = np.copysign(qz, R[1,0] - R[0,1])
+    tr = R[0,0] + R[1,1] + R[2,2]
+    
+    if tr > 0:
+        S = np.sqrt(tr + 1.0) * 2  # S = 4 * qw
+        qw = 0.25 * S
+        qx = (R[2,1] - R[1,2]) / S
+        qy = (R[0,2] - R[2,0]) / S
+        qz = (R[1,0] - R[0,1]) / S
+    elif (R[0,0] > R[1,1]) and (R[0,0] > R[2,2]):
+        S = np.sqrt(1.0 + R[0,0] - R[1,1] - R[2,2]) * 2  # S = 4 * qx
+        qw = (R[2,1] - R[1,2]) / S
+        qx = 0.25 * S
+        qy = (R[0,1] + R[1,0]) / S
+        qz = (R[0,2] + R[2,0]) / S
+    elif R[1,1] > R[2,2]:
+        S = np.sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]) * 2  # S = 4 * qy
+        qw = (R[0,2] - R[2,0]) / S
+        qx = (R[0,1] + R[1,0]) / S
+        qy = 0.25 * S
+        qz = (R[1,2] + R[2,1]) / S
+    else:
+        S = np.sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]) * 2  # S = 4 * qz
+        qw = (R[1,0] - R[0,1]) / S
+        qx = (R[0,2] + R[2,0]) / S
+        qy = (R[1,2] + R[2,1]) / S
+        qz = 0.25 * S
 
     return np.array([qw, qx, qy, qz])
 
@@ -455,14 +475,20 @@ class MuJoCoXMLGenerator:
 
         # 从矩阵中提取旋转并转换为四元数
         if len(matrix) >= 16:
-            # 提取3x3旋转子矩阵（列主序）
+            # 提取3x3旋转子矩阵（列主序 - Fusion 360格式）
+            # Fusion 360的4x4列主序矩阵格式：
+            # [ R00, R10, R20, 0 ]
+            # [ R01, R11, R21, 0 ]
+            # [ R02, R12, R22, 0 ]
+            # [ Tx,  Ty,  Tz,   1 ]
+            # 然后转置矩阵以还原Fusion 360中的视觉效果
             R = np.array([
                 [matrix[0], matrix[4], matrix[8]],
                 [matrix[1], matrix[5], matrix[9]],
                 [matrix[2], matrix[6], matrix[10]]
-            ])
+            ]).T  # 转置以还原Fusion 360视觉效果
             quaternion = matrix_to_quaternion(R)
-            print(f"   - 旋转矩阵: {R.tolist()}")
+            print(f"   - 旋转矩阵(列主序+转置): {R.tolist()}")
             print(f"   - 转换为四元数: {quaternion.tolist()}")
         else:
             quaternion = np.array([1, 0, 0, 0])
@@ -572,12 +598,13 @@ class MuJoCoXMLGenerator:
 
         # 从矩阵中提取旋转并转换为四元数
         if len(matrix) >= 16:
-            # 提取3x3旋转子矩阵（列主序）
+            # 提取3x3旋转子矩阵（列主序 - Fusion 360格式）
+            # 然后转置矩阵以还原Fusion 360中的视觉效果
             R = np.array([
                 [matrix[0], matrix[4], matrix[8]],
                 [matrix[1], matrix[5], matrix[9]],
                 [matrix[2], matrix[6], matrix[10]]
-            ])
+            ]).T  # 转置以还原Fusion 360视觉效果
             quaternion = matrix_to_quaternion(R)
             print(f"   - 旋转矩阵: {R.tolist()}")
             print(f"   - 转换为四元数: {quaternion.tolist()}")
@@ -815,13 +842,16 @@ if __name__ == "__main__":
         
         # 从矩阵中提取旋转并转换为四元数
         if len(matrix) >= 16:
-            # 提取3x3旋转子矩阵（列主序）
+            # 提取3x3旋转子矩阵（列主序 - Fusion 360格式）
+            # 然后转置矩阵以还原Fusion 360中的视觉效果
             R = np.array([
                 [matrix[0], matrix[4], matrix[8]],
                 [matrix[1], matrix[5], matrix[9]],
                 [matrix[2], matrix[6], matrix[10]]
-            ])
+            ]).T  # 转置以还原Fusion 360视觉效果
             quaternion = matrix_to_quaternion(R)
+            print(f"   - 组件 {component.get('component_name', 'Unknown')} 旋转矩阵(列主序+转置): {R.tolist()}")
+            print(f"   - 转换为四元数: {quaternion.tolist()}")
         else:
             quaternion = np.array([1, 0, 0, 0])
 
@@ -888,13 +918,16 @@ def _add_component_flat(self, xml_content, component, position):
         
         # 从矩阵中提取旋转并转换为四元数
         if len(matrix) >= 16:
-            # 提取3x3旋转子矩阵（列主序）
+            # 提取3x3旋转子矩阵（列主序 - Fusion 360格式）
+            # 然后转置矩阵以还原Fusion 360中的视觉效果
             R = np.array([
                 [matrix[0], matrix[4], matrix[8]],
                 [matrix[1], matrix[5], matrix[9]],
                 [matrix[2], matrix[6], matrix[10]]
-            ])
+            ]).T  # 转置以还原Fusion 360视觉效果
             quaternion = matrix_to_quaternion(R)
+            print(f"   - 组件 {component.get('component_name', 'Unknown')} 旋转矩阵(列主序+转置): {R.tolist()}")
+            print(f"   - 转换为四元数: {quaternion.tolist()}")
         else:
             quaternion = np.array([1, 0, 0, 0])
 
@@ -985,12 +1018,13 @@ def _add_component_flat(self, xml_content, component, position):
     
     # 从矩阵中提取旋转并转换为四元数
     if len(matrix) >= 16:
-        # 提取3x3旋转子矩阵（列主序）
+        # 提取3x3旋转子矩阵（列主序 - Fusion 360格式）
+        # 然后转置矩阵以还原Fusion 360中的视觉效果
         R = np.array([
             [matrix[0], matrix[4], matrix[8]],
             [matrix[1], matrix[5], matrix[9]],
             [matrix[2], matrix[6], matrix[10]]
-        ])
+        ]).T  # 转置以还原Fusion 360视觉效果
         quaternion = matrix_to_quaternion(R)
     else:
         quaternion = np.array([1, 0, 0, 0])

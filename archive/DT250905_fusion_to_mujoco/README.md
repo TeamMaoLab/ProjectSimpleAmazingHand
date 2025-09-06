@@ -1,71 +1,84 @@
-# Fusion 360 到 MuJoCo 转换项目归档
+# Fusion 360 到 MuJoCo 转换项目
 
-**日期**: 2025-09-05  
-**状态**: 已完成（位置计算）  
-**版本**: v1.0  
+**版本**: v2.0 | **状态**: ✅ 完成 | **日期**: 2025-09-06
 
-## 项目概述
+## 快速概览
 
-本项目实现了从 Fusion 360 导出数据到 MuJoCo XML 的转换流程，成功解决了坐标计算和结构生成问题。
+完整实现 Fusion 360 到 MuJoCo 的数据转换，彻底解决坐标计算和旋转方向问题，确保视觉效果完全一致。
 
-## 目录结构
+## 🎯 核心成果
+
+### ✅ 位置转换 (精度 1e-9)
+- 从列主序矩阵正确提取位置信息
+- 厘米 → 米 单位转换
+- 扁平化结构生成
+
+### ✅ 旋转修复 (关键突破)
+- **问题**: 旋转方向与 Fusion 360 相反
+- **解决**: 列主序矩阵提取后转置 `.T`
+- **结果**: 视觉效果完全一致
+- **验证**: 用户实测两个方向旋转均正确
+
+## 📁 项目结构
 
 ```
-DT250905_fusion_to_mujoco/
-├── README.md                    # 本文档
-├── docs/                        # 文档目录
-│   ├── coordinate_fix.md        # 坐标系统修复记录
+├── scripts/
+│   ├── main_converter.py        # 主转换脚本
+│   ├── test_rotation.py         # 基础测试
+│   └── debug_*.py              # 调试工具
+├── docs/
+│   ├── coordinate_fix.md        # 完整技术文档
 │   └── roadmap.md               # 项目路线图
-├── scripts/                     # 脚本目录
-│   ├── main_converter.py        # 主要转换脚本
-│   ├── analysis_tools.py        # 分析工具脚本
-│   └── test_scripts.py          # 测试脚本
-├── examples/                    # 示例数据
-│   └── component_positions.json # 示例导出数据
-└── legacy/                      # 旧版本脚本
-    ├── fusion_export.py         # 早期导出脚本
-    ├── mujoco_gen.py            # 早期生成脚本
-    └── temp.py                  # 临时测试脚本
+└── examples/                    # 示例数据
 ```
 
-## 核心成果
+## 🚀 快速使用
 
-### 1. Fusion 360 导出文件
-- 实现了零部件位置和矩阵数据的 JSON 格式导出
-- 包含组件名称、STL 文件、位置矩阵等信息
-- 元数据声明为 "column-major" 但实际数据是行主序格式
+```bash
+# 转换数据
+uv run python3 scripts/main_converter.py <export_dir>
 
-### 2. MuJoCo XML 构建
-- 基于导出的 JSON 数据生成 MuJoCo 兼容的 XML 文件
-- 解决了坐标计算问题：
-  - 使用索引 (3,7,11) 提取位置信息（厘米）
-  - 使用 0.01 转换因子将厘米转换为米
-- 实现了扁平化结构，所有组件直接位于 worldbody 下
-- 位置精度达到 1e-9 级别
+# 验证旋转
+uv run python3 scripts/test_rotation.py
+```
 
-## 关键技术发现
+## 🔧 关键技术
 
-1. **矩阵格式**: 实际数据是行主序格式，位置信息在索引 (3,7,11)
-2. **单位转换**: 矩阵位置值是厘米，需要乘以 0.01 转换为米
-3. **结构需求**: 扁平化结构更适合当前仿真需求
+### 旋转修复核心代码
+```python
+# 列主序提取 + 转置 = 正确旋转方向
+R = np.array([
+    [matrix[0], matrix[4], matrix[8]],
+    [matrix[1], matrix[5], matrix[9]],
+    [matrix[2], matrix[6], matrix[10]]
+]).T
+quaternion = matrix_to_quaternion(R)
+```
 
-## 使用方法
+### 位置提取
+```python
+# 索引 (3,7,11) 提取厘米单位位置
+tx_cm, ty_cm, tz_cm = matrix[3], matrix[7], matrix[11]
+position = [tx_cm * 0.01, ty_cm * 0.01, tz_cm * 0.01]
+```
 
-1. 从 Fusion 360 导出零部件位置数据（JSON 格式）
-2. 运行转换脚本生成 MuJoCo XML 文件
-3. 在 MuJoCo 中加载 XML 文件进行仿真
+## ✅ 验证状态
 
-## 下一步计划
+- [x] 坐标精度测试
+- [x] 旋转方向测试  
+- [x] 用户实际验证
+- [x] 完整测试套件
 
-1. 等待包含旋转数据的导出
-2. 实现完整的四元数计算
-3. 验证位置和旋转的准确性
+## 📖 文档
 
-## 相关文档
+- **[完整技术文档](docs/coordinate_fix.md)** - 详细技术说明和实现细节
+- **[项目路线图](docs/roadmap.md)** - 发展规划
 
-- [坐标系统修复记录](docs/coordinate_fix.md)
-- [项目路线图](docs/roadmap.md)
+## 📈 版本历史
 
-## 历史版本
+- **v2.0** (2025-09-06) - 旋转方向修复，用户验证通过
+- **v1.0** (2025-09-05) - 基础位置转换实现
 
-- v1.0 (2025-09-05): 初始版本，实现位置计算和扁平化结构
+---
+
+**总结**: 转换流程现已完全可用，可准确将 Fusion 360 装配转换为 MuJoCo 仿真模型。
